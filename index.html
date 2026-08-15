@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Shortener</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 1.5rem;
+        }
+
+        .input-group {
+            margin-bottom: 1rem;
+            text-align: left;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #result {
+            margin-top: 1.5rem;
+            padding: 10px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            display: none;
+            word-break: break-all;
+        }
+
+        .error {
+            color: red;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>URL Shortener</h1>
+        
+        <div class="input-group">
+            <input type="text" id="originalUrl" placeholder="Paste your long URL here..." required>
+        </div>
+
+        <button onclick="shortenUrl()">Shorten URL</button>
+
+        <div id="result">
+            <p><strong>Shortened Link:</strong></p>
+            <a href="#" id="shortLink" target="_blank"></a>
+        </div>
+        
+        <p id="errorMessage" class="error"></p>
+    </div>
+
+    <script>
+        function getBackendDomain() {
+            const domain = window.location.hostname;
+            
+            if (domain === "localhost" || domain === "127.0.0.1") {
+                return "http://localhost:8080";
+            }
+
+            const protocolPrefix = "https://";
+            const firstDotIndex = domain.indexOf('.');
+            
+            if (firstDotIndex === -1) {
+                return protocolPrefix + domain + "-backend";
+            }
+
+            const subdomain = domain.substring(0, firstDotIndex);
+            const restOfDomain = domain.substring(firstDotIndex);
+            return protocolPrefix + subdomain + "-backend" + restOfDomain;
+        }
+
+        async function shortenUrl() {
+            const originalUrl = document.getElementById('originalUrl').value;
+            const resultDiv = document.getElementById('result');
+            const shortLinkAnchor = document.getElementById('shortLink');
+            const errorMsg = document.getElementById('errorMessage');
+
+            // Reset UI
+            resultDiv.style.display = 'none';
+            errorMsg.textContent = '';
+
+            if (!originalUrl) {
+                errorMsg.textContent = "Please enter a URL.";
+                return;
+            }
+
+            try {
+                const backendUrl = getBackendDomain();
+                const apiUrl = backendUrl + "/api/shorten";
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ originalUrl: originalUrl })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+
+                const data = await response.json();
+                
+                const fullShortUrl = backendUrl + "/" + data.shortCode;
+
+                // Update UI
+                shortLinkAnchor.href = fullShortUrl;
+                shortLinkAnchor.textContent = fullShortUrl;
+                resultDiv.style.display = 'block';
+
+            } catch (error) {
+                console.error('Error:', error);
+                errorMsg.textContent = "Failed to shorten URL. Check console for details.";
+            }
+        }
+    </script>
+</body>
+</html>
+
+
